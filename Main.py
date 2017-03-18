@@ -70,7 +70,7 @@ def update():
     global done, mouseX, mouseY, debug
     
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             done=True
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_F1:
