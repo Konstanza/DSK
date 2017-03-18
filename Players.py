@@ -60,10 +60,21 @@ class Player1():
         rotatedShipRect = rotatedShip.get_rect()
         rotatedShipRect.center = (surface.get_width() / 2, surface.get_height() / 2)
         surface.blit(rotatedShip, rotatedShipRect)
-        
-        cX = surface.get_width()/2
-        cY = surface.get_height()/2
-    
+      
         if debug:
+            r = 50
+            cX = surface.get_width()/2
+            cY = surface.get_height()/2
+            
+            pF = (cX+self.dirX*r, cY+self.dirY*r)
+            
+            rad = math.pi*(self.deg-90)/180
+            pR = (cX+math.sin(rad)*r, cY+math.cos(rad)*r)
+        
+            rad = math.pi*(self.deg+90)/180
+            pL = (cX+math.sin(rad)*r, cY+math.cos(rad)*r)
+            
             pygame.draw.polygon(surface, (255,255,255), [(cX,cY),(mouseX, cY),(mouseX,mouseY)], 1)
-            pygame.draw.line(surface, (255,0,0), (cX, cY),(cX+self.dirX*self.speed, cY+self.dirY*self.speed), 1)
+            pygame.draw.line(surface, (255,0,0), (cX, cY), pF, 1)
+            pygame.draw.line(surface, (0,255,0), (cX, cY), pR, 1)
+            pygame.draw.line(surface, (0,0,255), (cX, cY), pL, 1)
