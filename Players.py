@@ -35,15 +35,17 @@ class Player1():
         if pressed[pygame.K_w]:
             self.x -= self.dirX*self.speed
             self.y -= self.dirY*self.speed
-        elif pressed[pygame.K_s]:
+        if pressed[pygame.K_s]:
             self.x += self.dirX*self.speed
             self.y += self.dirY*self.speed
-        elif pressed[pygame.K_d]:
-            self.y += self.dirY*self.speed
-            self.x -= self.dirX*self.speed
-        elif pressed[pygame.K_a]:
-            self.y -= self.dirY*self.speed
-            self.x += self.dirX*self.speed
+        if pressed[pygame.K_d]:
+            rad = math.pi*(self.deg-90)/180
+            self.y += math.cos(rad)*self.speed
+            self.x += math.sin(rad)*self.speed
+        if pressed[pygame.K_a]:
+            rad = math.pi*(self.deg+90)/180
+            self.y += math.cos(rad)*self.speed
+            self.x += math.sin(rad)*self.speed
             
         oc = -mouseY+(superficie.get_height()/2)
         ac = mouseX-(superficie.get_width()/2)
