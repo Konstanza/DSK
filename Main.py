@@ -1,25 +1,17 @@
 import pygame
 import os
 import sys
-from os.path import dirname
-from Players import Player1
+from Players import Player1, Player2
+from Misc import *
+import Maps
+import random
 
-BLACK = (0,0,0)
-FPS = 60
-DISPLAY_WIDTH = 640
-DISPLAY_HEIGHT = 480
-
-# Images
-IMAGE_PATH = os.path.join(dirname(__file__), "Images")
-
-background = pygame.image.load(os.path.join(IMAGE_PATH, 'space-1.png'))
-blueShip = pygame.image.load(os.path.join(IMAGE_PATH, 'playerShip1_blue.png'))
-bluShipRect = blueShip.get_rect()
-
+random.seed(a=None)
 
 def main():
     
     global clock, done
+    
     
     initGame()
 
@@ -34,8 +26,8 @@ def main():
 
 
 def initGame():
-    global clock, display, p1, mouseX, mouseY, done, debug
-     
+    global clock, display, p1, mouseX, mouseY, done, debug, map1
+    
     pygame.init()
 
     display = pygame.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT))
@@ -43,8 +35,20 @@ def initGame():
     
     clock = pygame.time.Clock()
 
-    p1 = Player1(display.get_width()/2-bluShipRect.width/2, display.get_height()/2-bluShipRect.height/2, blueShip)
-
+    #p1 = Player1(display, display.get_width()/2-bluShipRect.width/2, display.get_height()/2-bluShipRect.height/2, blueShip)
+    p1 = Player1(display, 0, 0, blueShip)
+    
+    p2 = Player2(display, 100, 100, redShip)
+     
+    
+    Maps.generate_world()
+    Maps.maps[0].add_player(p1)
+    Maps.maps[0].add_player(p2)
+    map1 = random.choice(Maps.maps)
+    
+    p1.setMap(map1)
+    p2.setMap(map1)
+    
     mouseX = 0  
     mouseY = 0
 
@@ -57,9 +61,7 @@ def initGame():
 def draw():
     display.fill(BLACK)
     
-    display.blit(background, (p1.x, p1.y))
-    
-    p1.draw(display, mouseX, mouseY, debug)
+    p1.draw()
     
     pygame.display.flip()
     
@@ -74,11 +76,22 @@ def update():
             done=True
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_F1:
-                debug = not debug
+                p1.switchDebug()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w:
+                p1.direction = 'w'
+            elif event.key == pygame.K_s:
+                p1.direction = 's'
+            elif event.key == pygame.K_a:
+                p1.direction = 'a'
+            elif event.key == pygame.K_d:
+                p1.direction = 'd'
         elif event.type == pygame.MOUSEMOTION:
             mouseX, mouseY = event.pos
+            p1.setMousePosition(mouseX,mouseY)
                 
-    p1.update(display, mouseX, mouseY)
+    #p1.update(display, mouseX, mouseY)
+    Maps.update()
     
     
 def terminate():
