@@ -1,3 +1,8 @@
+'''
+Created on 17 mar. 2017
+
+@author: Konstanza
+'''
 
 import pygame
 import math
@@ -17,7 +22,6 @@ class Player1():
         "Posibles variables"
         self.weapon = Weapon(basicWeapon)
         self.ship = ship
-        self.shipRect = ship.get_rect()
         self.rotatedShipRect = None
         self.power = power
         self.shield = shield
@@ -26,14 +30,16 @@ class Player1():
         self.display = display
         self.x = x
         self.y = y
+        self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
         self.deg = 0     
         self.dirX = 0
         self.dirY = -1   
-        self.speed = 5    
+        self.speed = 5
         self.shots = [] 
         self.mouseX = 0
         self.mouseY = 0
         self.debug = False
+        self.inPortal = None
         
         
     def switchDebug(self):
@@ -42,7 +48,11 @@ class Player1():
     def setMousePosition(self, x, y):
         self.mouseX = x
         self.mouseY = y
-
+    
+    def setPosition(self, x, y):
+        self.X = x
+        self.Y = y
+    
     def update(self):
         
         
@@ -104,10 +114,10 @@ class Player1():
         
         self.direction = ''
         
-    def setMap(self, map):
-        self.map = map
+        self.shipRect.center = (self.x, self.y)
         
     def draw(self):
+        
         rotatedShip = pygame.transform.rotate(self.ship, self.deg)
         rotatedShipRect = rotatedShip.get_rect()
         rotatedShipRect.center = (self.display.get_width() / 2, self.display.get_height() / 2)
@@ -131,11 +141,10 @@ class Player1():
             rad = math.pi*(self.deg+90)/180
             pL = (cX+math.sin(rad)*r, cY+math.cos(rad)*r)
             
-            pygame.draw.polygon(self.display, WHITE, [(cX,cY),(self.mouseX, cY),(self.mouseX,self.mouseY)], 1)
-            pygame.draw.line(self.display, RED, (cX, cY), pF, 1)
-            pygame.draw.line(self.display, GREEN, (cX, cY), pR, 1)
-            pygame.draw.line(self.display, BLUE, (cX, cY), pL, 1)
-
+            #pygame.draw.polygon(self.display, WHITE, [(cX,cY),(self.mouseX, cY),(self.mouseX,self.mouseY)], 1)
+            #pygame.draw.line(self.display, RED, (cX, cY), pF, 1)
+            #pygame.draw.line(self.display, GREEN, (cX, cY), pR, 1)
+            #pygame.draw.line(self.display, BLUE, (cX, cY), pL, 1)
 
 class Player2():
     '''
@@ -150,13 +159,14 @@ class Player2():
         "Posibles variables"
         self.weapon = Weapon(basicWeapon)
         self.ship = ship
-        self.shipRect = ship.get_rect()
+        
         self.power = power
         self.shield = shield
         
         self.display = display
         self.x = x
         self.y = y
+        self.shipRect = ship.get_rect(centerx = self.x, centery = self.y)
         self.deg = 0     
         self.dirX = 0
         self.dirY = -1   
@@ -165,6 +175,7 @@ class Player2():
         self.mouseX = 0
         self.mouseY = 0
         self.debug = False
+        self.inPortal = None
         
     def update(self):
         
@@ -184,12 +195,12 @@ class Player2():
         for shot in self.shots:
             shot.update()
         
-    def setMap(self, map):
-        self.map = map
+        self.shipRect.center = (self.x, self.y)
         
     def draw(self, surface):
         for shot in self.shots:
             shot.draw(surface)
             
-        surface.blit(self.ship, (self.x, self.y))
+        surface.blit(self.ship, self.shipRect)
+
 
