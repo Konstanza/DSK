@@ -36,18 +36,18 @@ def initGame():
     clock = pygame.time.Clock()
 
     #p1 = Player1(display, display.get_width()/2-bluShipRect.width/2, display.get_height()/2-bluShipRect.height/2, blueShip)
-    p1 = Player1(display, 0, 0, blueShip)
+    p1 = Player1(display, 400, 400, blueShip)
     
-    p2 = Player2(display, 100, 100, redShip)
+    p2 = Player2(display, 300, 300, redShip)
      
     
     Maps.generate_world()
     Maps.maps[0].add_player(p1)
     Maps.maps[0].add_player(p2)
-    map1 = random.choice(Maps.maps)
+    map1 = Maps.maps[0]
     
-    p1.setMap(map1)
-    p2.setMap(map1)
+    p1.map = map1
+    p2.map = map1
     
     mouseX = 0  
     mouseY = 0
@@ -100,4 +100,3 @@ def terminate():
 
 if __name__ == '__main__':
     main()
-
