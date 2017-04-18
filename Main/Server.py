@@ -4,7 +4,8 @@ Created on 13 abr. 2017
 @author: Konstanza
 '''
 import socket
-import pickle
+import cPickle as pickle
+from Players import PlayerDataForHost
 
 class Server(object):
     '''
@@ -34,7 +35,9 @@ class Server(object):
         self.sending = False
         self.worldLoaded = False
         self.playersLoaded = False
+        self.playerNamesLoaded = False
         self.playing = False
+        
     
     def state_waitForPlayers(self):
         self.state = self.state_waitForPlayers
@@ -77,7 +80,8 @@ class Server(object):
                 if not addr in self.userAddr:
                     self.sendto("Game started", addr)
                 else:
-                    print("Received:",str(data), "from",addr)
+                    if not isinstance(data, PlayerDataForHost):
+                        print("Received:",str(data), "from",addr)
                     
                     if data == "Waiting for data":
                         self.userAddr[addr].waiting = True
@@ -103,6 +107,17 @@ class Server(object):
                             if not self.userAddr[addr].playerLoaded:
                                 self.playersLoaded = False
                                 break
+                    elif data == "Players names loaded":
+                        self.userAddr[addr].playerNamesLoaded = True
+                        self.playersNamesLoaded = True
+                        
+                        for addr in self.userAddr:
+                            if not self.userAddr[addr].playerNamesLoaded:
+                                self.playersNamesLoaded = False
+                                break
+                    elif isinstance(data, PlayerDataForHost):
+                        self.userAddr[self.indexAddr[data.playerId-1]].playerData = data
+                        
             except socket.error:
                 pass  
         
@@ -116,7 +131,7 @@ class Server(object):
     
     def sendto(self, data, addr):
         #data = json.dumps(data)    
-        print("Sending:",str(data), "to", addr)
+        #print("Sending:",str(data), "to", addr)
         data = pickle.dumps(data)    
         self.socket.sendto(data, addr)
     
@@ -139,6 +154,8 @@ class User():
         self.nickname = nickname
         self.worldLoaded = False
         self.playerLoaded = False
+        self.playerNamesLoaded = False
         self.waiting = False
+        self.playerData = None
 
     

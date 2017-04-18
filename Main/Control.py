@@ -13,6 +13,9 @@ class RemoteKeyboard(object):
             "moveA": False, 
             "moveS": False, 
             "moveD": False}
+    
+    def __str__(self):
+        return str(self.keyPressed)
         
 class Keyboard(object):
     
@@ -82,6 +85,9 @@ class RemoteMouse(object):
         
         self.mouseX = 0
         self.mouseY = 0
+    
+    def __str__(self):
+        return str(self.buttonPressed)
             
             
             

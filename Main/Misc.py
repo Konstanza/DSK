@@ -7,16 +7,17 @@ Created on 18 mar. 2017
 import os
 from os.path import dirname
 import pygame
+import time
 
 
 view = None
 
 #Server-Client
-host = 'localhost'
+host = '192.168.1.105'
 hostPort = 9999
-ip = 'localhost'
+ip = '192.168.1.105'
 port = 9999
-nickname = 'Kons2'
+nickname = 'Kons'
 minPlayers = 1
 maxPlayers = 2
 
@@ -69,7 +70,9 @@ basicWeapon = (basicShot, 10, 10, 30) # image, power, speed, time
 FONT_PATH = os.path.join(dirname(__file__), "Fonts")
 font = 'HappyKiller.ttf'
 
-
+def getCurrentTimeMs():
+    return int(round(time.time() * 1000))
+    
 class TextButton():
     
     released = True

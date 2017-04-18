@@ -5,11 +5,12 @@ Created on 13 abr. 2017
 '''
 
 import socket
-import pickle
+import cPickle as pickle
 import threading
-from Maps import RemoteWorld
-from Players import PlayerData
+from Maps import RemoteWorld, RemoteMapForClient
+from Players import PlayerDataForClient, PlayersNames
 import Maps
+from Misc import getCurrentTimeMs
 
 class Client(object):
     '''
@@ -32,9 +33,13 @@ class Client(object):
         self.downloading = False
         self.worldLoaded = False
         self.playerData = None
+        self.mapData = None
+        self.playersNames = None
+        
+        self.lastTime = getCurrentTimeMs()
+        self.ms = 0
         
     def state_sendName(self):
-        
         self.send(self.name)
         
     def state_loop(self):
@@ -45,22 +50,34 @@ class Client(object):
             
                 data = pickle.loads(data)
                 
-                print(str(data), addr)
-                
                 if data == "Sending game data":
                     self.downloading = True
                     self.send("Waiting for data")
+                    print(str(data), addr)
                     print("Waiting for data")
                 elif isinstance(data, RemoteWorld):
                     Maps.load_world(data)
                     self.worldLoaded = True
                     self.send("World loaded")
+                    print(str(data), addr)
                     print("World loaded")
-                elif isinstance(data, PlayerData):
+                elif isinstance(data, PlayerDataForClient):
+                    if self.playerData is None:
+                        self.send("Player loaded")
+                        print(str(data), addr)
+                        print("Player loaded")
                     self.playerData = data
-                    self.send("Player loaded")
-                    print("Player loaded")
-                    
+                elif isinstance(data, PlayersNames):
+                    self.playersNames = data.players
+                    self.send("Players names loaded")
+                    print(str(data), addr)
+                    print("Players names loaded")
+                elif isinstance(data, RemoteMapForClient):
+                    self.mapData = data
+                
+                currentTime = getCurrentTimeMs()
+                self.ms = currentTime - self.lastTime
+                self.lastTime = currentTime
             except socket.error:
                 pass
 

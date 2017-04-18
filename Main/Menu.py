@@ -7,7 +7,7 @@ import pygame
 import Misc
 from LanGame import LanGameHost, LanGameClient
 from SingleGame import SingleGame
-from Players import PlayerClient, PlayerData, PlayerHost
+from Players import PlayerDataForClient, PlayerHost, PlayerEnemyHost, PlayersNames
 from Client import Client
 from Server import Server
 import threading
@@ -158,6 +158,7 @@ class CreatingView(object):
         self.server = server
         self.server.waiting = False
         self.state = None
+        self.players = []
     
     class preparingClients(object):
         def __init__(self, view):
@@ -168,12 +169,12 @@ class CreatingView(object):
             
         def update(self):
             if self.view.server.sending:
+                print('Clients waiting for data...')
                 self.view.state = self.view.generateWorld(self.view)
         
     class generateWorld(object):
         def __init__(self, view):
             self.view = view
-            print('Clients waiting for data...')
             print('Generating world...')
             Maps.generate_world(self.view.server.numPlayers()+1)
             
@@ -182,16 +183,34 @@ class CreatingView(object):
         
         def update(self):
             if self.view.server.worldLoaded:
+                print("World loaded")
+                self.view.state = self.view.sendPlayersName(self.view)
+    
+    class sendPlayersName(object):
+        def __init__(self, view):
+            self.view = view
+            
+            print("Sending players names")
+            playersNames = {}
+            playersNames[0] = Misc.nickname
+            
+            for i in range(len(self.view.server.indexAddr)):
+                playerName = self.view.server.userAddr[self.view.server.indexAddr[i]].nickname
+                playersNames[i+1] = playerName
+            
+            self.view.server.sendtoall(PlayersNames(playersNames))
+        
+        def update(self):
+            if self.view.server.playersNamesLoaded:
+                print("Players names loaded")
                 self.view.state = self.view.generatePlayers(self.view)
     
     class generatePlayers(object):
         def __init__(self, view):
             self.view = view
-            print("World loaded")
             print("Generating players...")
             
             takenMaps = []
-            players = []
             
             for m in Maps.maps:
                 takenMaps.append(m)
@@ -216,27 +235,33 @@ class CreatingView(object):
                         if portal.rect.colliderect(imRect):
                             col = True
                 
-                p = PlayerData(playerId, x, y, 0, m.mapId)
+                p = PlayerDataForClient()
+                p.playerId = playerId
+                p.x = x
+                p.y = y
+                p.mapId = m.mapId
                 
                 print('Player '+str(playerId)+' created: '+ str(p))
                 
                 if playerId > 0:
-                    players.append((p, playerId-1))
-                    Maps.maps[m.mapId].add_player(PlayerClient(p))
+                    player = PlayerEnemyHost(p)
+                    self.view.players.append(player)
+                    Maps.maps[m.mapId].add_player(player)
                 else:
                     self.view.playerHost = PlayerHost(p)
                     Maps.maps[m.mapId].add_player(self.view.playerHost)
             
             print("Sending players data...")
-            for player in players:
-                self.view.server.sendtoIndex(player[0], player[1])
+            for player in self.view.players:
+                self.view.server.sendtoIndex(player.getPlayerDataForClient(), player.playerId-1)
         
         def update(self):
             if self.view.server.playersLoaded:
+                print("Players loaded")
                 self.view.startGame()
     
     def startGame(self):
-        Misc.view = LanGameHost(self.server, self.playerHost)
+        Misc.view = LanGameHost(self.server, self.playerHost, self.players)
         
     def quit(self):
         self.server.terminate()
@@ -278,8 +303,17 @@ class DownloadingView(object):
         
         def update(self):
             if self.view.client.worldLoaded:
-                self.view.state = self.view.downloadPlayer(self.view)
+                self.view.state = self.view.downloadPlayersNames(self.view)
     
+    class downloadPlayersNames(object):
+        def __init__(self, view):
+            self.view = view
+            print("Downloading players names...")
+        
+        def update(self):
+            if self.view.client.playersNames is not None:
+                self.view.state = self.view.downloadPlayer(self.view)
+                 
     class downloadPlayer(object):
         def __init__(self, view):
             self.view = view
@@ -288,7 +322,7 @@ class DownloadingView(object):
         def update(self):
             if self.view.client.playerData is not None:
                 self.view.startGame()
-                
+    
     def startGame(self):
         Misc.view = LanGameClient(self.client)
         

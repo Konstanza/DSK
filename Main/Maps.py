@@ -9,9 +9,9 @@ import pygame
 from pygame import surface
 from Vector import Vector
 import os
-from pygame.rect import Rect
 from random import randint
 import pyganim
+from Players import PlayerEnemyClient
 
 maps = []
 portals = []
@@ -58,6 +58,20 @@ class RemoteMap(object):
         
     def __str__(self):
         return str((self.mapId, self.backgroundId))
+
+class RemoteMapForClient(object):
+    
+    def __init__(self, map1, playerId):
+        self.mapId = map1.mapId
+        self.players = {}
+        
+        for key in map1.players:
+            if key != playerId:
+                player = map1.players[key]
+                self.players[player.playerId] = player.getEnemyDataForClientMap()
+        
+    def __str__(self):
+        return str((self.mapId, str(self.players)))
     
 class Map(object):
     '''
@@ -71,14 +85,27 @@ class Map(object):
         self.mapId = mapId
         self.backgroundId = backgroundId
         self.background = Misc.backgrounds[self.backgroundId]
-        self.players = []
+        self.players = {}
         self.objects = []
         self.portals = []
         self.shots = []
     
     def add_portal(self, portal):
         self.portals.append(portal)
-        
+
+    def loadMap(self, data):
+        if data is not None:
+            for key in data.players:
+                playerData = data.players[key]
+                
+                if key in self.players:
+                    self.players[key].loadData(playerData, data.mapId)
+                else:
+                    self.add_player(PlayerEnemyClient(playerData, data.mapId))
+                
+    def getMap(self, player):
+        return RemoteMapForClient(self, player.playerId)
+    
     def draw(self, p1):
         
         back = self.background.copy()
@@ -89,7 +116,8 @@ class Map(object):
         for portal in self.portals:
             portal.draw(back)
             
-        for player in self.players:
+        for key in self.players:
+            player = self.players[key]
             if player != p1:
                 player.draw(back)
         
@@ -113,7 +141,8 @@ class Map(object):
             
     def update(self):
             
-        for player in self.players:
+        for key in self.players:
+            player = self.players[key]
             player.update()
         
         for obj in self.objects:
@@ -126,11 +155,11 @@ class Map(object):
             shot.update()
     
     def add_player(self, player):
-        self.players.append(player)
-        player.map = self
+        self.players[player.playerId] = player
+        player.setMap(self)
     
     def remove_player(self, player):
-        self.players.remove(player)
+        del self.players[player.playerId]
     
 class Portal():
     def __init__(self, x, y, map1Id, mX, mY, map2Id, exitId = None):
@@ -161,15 +190,15 @@ class Portal():
     
     def update(self):
         # DETECT COLLISION
-        for player in self.map1.players:
+        for key in self.map1.players.keys():
+            player = self.map1.players[key]
             if self.exit != None:
                 if player.inPortal != self.exit:
                     if self.collision(player):
                         player.inPortal = self
-                        self.map1.players.remove(player)
+                        self.map1.remove_player(player)
                         self.map2.add_player(player)
                 
-                        player.setMap(self.map2)
                         player.setDirection('')
                         player.setPosition(self.mX, self.mY)
                 else:
@@ -178,10 +207,9 @@ class Portal():
             else:
                 if self.collision(player):
                     player.inPortal = self
-                    self.map1.players.remove(player)
+                    self.map1.remove_player(player)
                     self.map2.add_player(player)
                 
-                    player.setMap(self.map2)
                     player.setDirection('')
                     player.setPosition(self.mX, self.mY)
                 
@@ -220,11 +248,13 @@ def generate_world_teaser():
     maps[1].add_portal(p3)
     maps[2].add_portal(p4)
     
-def generate_world(minim):
+def generate_world(minim, maxim = None):
     global maps, portals
+    if maxim is None:
+        maxim = minim
     maps = []
     portals = []
-    mapsCount = random.randint(minim,5)
+    mapsCount = random.randint(minim,maxim)
     print(mapsCount, "maps")
     
     for i in range(mapsCount):
@@ -257,7 +287,7 @@ def generate_world(minim):
         p1.exitId = lastPortal+1
         p1.exit = p2
         
-
+    
 def get_world():
     global maps, portals
     
