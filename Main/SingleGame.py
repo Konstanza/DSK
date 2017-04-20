@@ -6,7 +6,7 @@ Created on 14 abr. 2017
 import Maps
 import Misc
 import pygame
-from Players import Player1
+from Players import PlayerHost
 
 class SingleGame(object):
     '''
@@ -19,10 +19,10 @@ class SingleGame(object):
         Constructor
         '''
         
-        Maps.generate_world(1)
+        Maps.generate_world(2)
         
-        self.p1 = Player1(Misc.display, 400, 400, Misc.blueShip)
-        Maps.maps[0].add_player(self.p1)
+        self.player = PlayerHost(0,300, 300)
+        Maps.maps[0].add_player(self.player)
         
     def update(self):
         
@@ -30,21 +30,27 @@ class SingleGame(object):
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 Misc.done=True
             elif event.type == pygame.KEYDOWN:
+                self.player.updateKeyboard()
                 if event.key == pygame.K_w:
-                    self.p1.direction = 'w'
+                    self.player.direction = 'w'
                 elif event.key == pygame.K_s:
-                    self.p1.direction = 's'
+                    self.player.direction = 's'
                 elif event.key == pygame.K_a:
-                    self.p1.direction = 'a'
+                    self.player.direction = 'a'
                 elif event.key == pygame.K_d:
-                    self.p1.direction = 'd'
+                    self.player.direction = 'd'
+            elif event.type == pygame.KEYUP:
+                self.player.updateKeyboard()
             elif event.type == pygame.MOUSEMOTION:
                 mouseX, mouseY = event.pos
-                self.p1.setMousePosition(mouseX,mouseY)
+                self.player.setMousePosition(mouseX,mouseY)
+            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
+                self.player.updateMouseButtons()
         
         Maps.update()
         
     def draw(self):
-        self.p1.draw()
+        Misc.display.fill(Misc.BLACK)
+        self.player.draw()
             
         

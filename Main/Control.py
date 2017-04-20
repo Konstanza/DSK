@@ -57,7 +57,8 @@ class Mouse(object):
         self.buttonCodes[button] = buttonCode
     
     def updateButtons(self):
-        pressed = pygame.key.get_pressed()
+        pressed = pygame.mouse.get_pressed()
+        
         codes = self.buttonCodes
         
         for button in codes:

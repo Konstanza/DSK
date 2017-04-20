@@ -13,11 +13,11 @@ import time
 view = None
 
 #Server-Client
-host = '192.168.1.105'
+host = 'localhost'
 hostPort = 9999
-ip = '192.168.1.105'
+ip = 'localhost'
 port = 9999
-nickname = 'Kons'
+nickname = 'Kons2'
 minPlayers = 1
 maxPlayers = 2
 
@@ -63,8 +63,9 @@ bluShipRect = blueShip.get_rect()
 
 
 # Weapons
-basicShot =  pygame.image.load(os.path.join(IMAGE_PATH, 'laserBlue04.png'))
-basicWeapon = (basicShot, 10, 10, 30) # image, power, speed, time
+shots = [
+    os.path.join(IMAGE_PATH, 'laserBlue04.png')
+    ]
 
 #Fonts
 FONT_PATH = os.path.join(dirname(__file__), "Fonts")

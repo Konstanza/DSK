@@ -235,22 +235,16 @@ class CreatingView(object):
                         if portal.rect.colliderect(imRect):
                             col = True
                 
-                p = PlayerDataForClient()
-                p.playerId = playerId
-                p.x = x
-                p.y = y
-                p.mapId = m.mapId
-                
-                print('Player '+str(playerId)+' created: '+ str(p))
-                
                 if playerId > 0:
-                    player = PlayerEnemyHost(p)
+                    player = PlayerEnemyHost(playerId, x, y)
                     self.view.players.append(player)
                     Maps.maps[m.mapId].add_player(player)
                 else:
-                    self.view.playerHost = PlayerHost(p)
+                    self.view.playerHost = PlayerHost(playerId, x, y)
                     Maps.maps[m.mapId].add_player(self.view.playerHost)
-            
+                    
+                print('Player '+str(playerId)+' created: '+ str((playerId, x, y, m.mapId)))
+                
             print("Sending players data...")
             for player in self.view.players:
                 self.view.server.sendtoIndex(player.getPlayerDataForClient(), player.playerId-1)

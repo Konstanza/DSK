@@ -7,7 +7,7 @@ Created on 17 mar. 2017
 import pygame
 import math
 import Misc
-from Weapons import Weapon
+import Weapons
 from Control import Keyboard, Mouse
 from Control import RemoteKeyboard, RemoteMouse
 import Maps
@@ -23,7 +23,7 @@ class Player1():
         '''
         
         "Posibles variables"
-        self.weapon = Weapon(Misc.basicWeapon)
+        self.weapon = Weapons.BasicWeapon(self)
         self.ship = ship
         self.rotatedShipRect = None
         self.power = power
@@ -236,7 +236,7 @@ class Player2():
         '''
         
         "Posibles variables"
-        self.weapon = Weapon(Misc.basicWeapon)
+        self.weapon = Weapons.BasicWeapon(self)
         self.ship = ship
         
         self.power = power
@@ -320,6 +320,8 @@ class PlayerDataForClient():
             self.x = player.x
             self.y = player.y
             self.mapId = player.mapId
+            self.energy = player.energy
+            self.shield = player.shield
     
     def __str__(self):
         return str((self.playerId, self.x, self.y, self.mapId))
@@ -384,23 +386,28 @@ class PlayerEnemyClient():
         
         
 class PlayerEnemyHost():
-    def __init__(self, playerData):
-        self.playerId = playerData.playerId
-        self.x = playerData.x
-        self.y = playerData.y
+    def __init__(self, playerId, x, y):
+        self.playerId = playerId
+        self.x = x
+        self.y = y
         
         self.deg = 0
         self.score = 0
         self.speed = 5
+        self.energy = 100
+        self.shield = 100
+        self.weapon = Weapons.BasicWeapon(self)
         
-        self.mapId = playerData.mapId
-        self.map = Maps.maps[self.mapId]
+        #self.mapId = playerData.mapId
+        #self.map = Maps.maps[self.mapId]
         
         self.keyboard = RemoteKeyboard()
         self.mouse = RemoteMouse()
         
         self.ship = Misc.players[self.playerId].copy()
         self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
+        self.rotatedShipRect = self.shipRect
+        self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
         self.inPortal = None
         
@@ -432,9 +439,9 @@ class PlayerEnemyHost():
         
     def draw(self, surface):
         rotatedShip = pygame.transform.rotate(self.ship, self.deg)
-        rotatedShipRect = rotatedShip.get_rect(centerx = self.x, centery = self.y)
+        self.rotatedShipRect = rotatedShip.get_rect(centerx = self.x, centery = self.y)
         
-        surface.blit(rotatedShip, rotatedShipRect)
+        surface.blit(rotatedShip, self.rotatedShipRect)
     
     def move_w(self):
         rad = math.pi*(self.deg+180)/180
@@ -495,6 +502,11 @@ class PlayerEnemyHost():
             self.move_a()
             self.direction = 'a'
         
+        if self.mouse.buttonPressed["shoot"]:
+            self.weapon.shoot()
+            
+        self.weapon.update()
+        
         self.direction = ''
         
         self.shipRect.center = (self.x, self.y)
@@ -507,23 +519,28 @@ class PlayersNames():
         return str((self.players))
     
 class PlayerHost():
-    def __init__(self, playerData):
-        self.playerId = playerData.playerId
-        self.x = playerData.x
-        self.y = playerData.y
+    def __init__(self, playerId, x, y):
+        self.playerId = playerId
+        self.x = x
+        self.y = y
         
         self.deg = 0
         self.score = 0
         self.speed = 5
+        self.energy = 100
+        self.shield = 100
+        self.weapon = Weapons.BasicWeapon(self)
         
-        self.mapId = playerData.mapId
-        self.map = Maps.maps[self.mapId]
+        #self.mapId = playerData.mapId
+        #self.map = Maps.maps[self.mapId]
         
         self.keyboard = Keyboard()
         self.mouse = Mouse()
         
         self.ship = Misc.players[self.playerId].copy()
         self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
+        self.rotatedShipRect = self.shipRect
+        self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
         self.display = Misc.display
         self.inPortal = None
@@ -699,6 +716,11 @@ class PlayerHost():
             
         self.change_dir()
         
+        if self.mouse.isButtonPressed("shoot"):
+            self.weapon.shoot()
+            
+        self.weapon.update()
+        
         self.direction = ''
         
         self.shipRect.center = (self.x, self.y)
@@ -721,6 +743,8 @@ class PlayerClient():
         
         self.ship = Misc.players[self.playerId].copy()
         self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
+        self.rotatedShipRect = self.shipRect
+        self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
         self.display = Misc.display
         self.inPortal = None

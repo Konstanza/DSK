@@ -26,7 +26,7 @@ def main():
     while Misc.done == False:
         Misc.view.update()
         update()
-    
+        
         Misc.view.draw()
         draw()
     

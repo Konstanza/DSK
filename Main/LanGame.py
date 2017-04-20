@@ -36,6 +36,14 @@ class LanGameHost():
                 self.quit()
             elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                 self.playerHost.updateKeyboard()
+                if event.key == pygame.K_w:
+                    self.playerHost.direction = 'w'
+                elif event.key == pygame.K_s:
+                    self.playerHost.direction = 's'
+                elif event.key == pygame.K_a:
+                    self.playerHost.direction = 'a'
+                elif event.key == pygame.K_d:
+                    self.playerHost.direction = 'd'
             elif event.type == pygame.MOUSEMOTION:
                 mouseX, mouseY = event.pos
                 self.playerHost.setMousePosition(mouseX,mouseY)

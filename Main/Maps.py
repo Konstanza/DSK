@@ -7,11 +7,11 @@ import random
 import Misc
 import pygame
 from pygame import surface
-from Vector import Vector
 import os
 from random import randint
 import pyganim
 from Players import PlayerEnemyClient
+from Weapons import ProjectilData, ProjectilHost, ProjectilClient
 
 maps = []
 portals = []
@@ -64,11 +64,15 @@ class RemoteMapForClient(object):
     def __init__(self, map1, playerId):
         self.mapId = map1.mapId
         self.players = {}
+        self.shots = []
         
         for key in map1.players:
             if key != playerId:
                 player = map1.players[key]
                 self.players[player.playerId] = player.getEnemyDataForClientMap()
+        
+        for shot in map1.shots:
+            self.shots.append(ProjectilData(shot))
         
     def __str__(self):
         return str((self.mapId, str(self.players)))
@@ -93,6 +97,9 @@ class Map(object):
     def add_portal(self, portal):
         self.portals.append(portal)
 
+    def add_shot(self, shot):
+        self.shots.append(shot)
+
     def loadMap(self, data):
         if data is not None:
             for key in data.players:
@@ -102,6 +109,11 @@ class Map(object):
                     self.players[key].loadData(playerData, data.mapId)
                 else:
                     self.add_player(PlayerEnemyClient(playerData, data.mapId))
+            
+            self.shots = []
+            for shot in data.shots:
+                self.shots.append(ProjectilClient(shot))
+                
                 
     def getMap(self, player):
         return RemoteMapForClient(self, player.playerId)
@@ -115,28 +127,20 @@ class Map(object):
             
         for portal in self.portals:
             portal.draw(back)
+        
+        for shot in self.shots:
+            shot.draw(back)
             
         for key in self.players:
             player = self.players[key]
             if player != p1:
                 player.draw(back)
         
-        for shot in self.shots:
-            shot.draw(back, Misc.debug)
-        
         if Misc.debug:
             pygame.draw.rect(back, Misc.WHITE, p1.rotatedShipRect, 1)
             pygame.draw.rect(back, Misc.RED, p1.shipRect, 1)
+            pygame.draw.circle(back, Misc.YELLOW, p1.rotatedShipRect.center, p1.radius, 1)
             
-            """
-            u = Vector(p1.dirX*p1.speed, p1.dirY*p1.speed)
-            v = Vector(100,100)
-            pv = u.vectorProyeccionSobre(v)
-            
-            pygame.draw.line(back, YELLOW, (p1.x,p1.y), (p1.x+u.x, p1.y+u.y), 1)
-            pygame.draw.line(back, MAGENTA, (p1.x,p1.y), (p1.x+v.x, p1.y+v.y), 1)
-            pygame.draw.line(back, GREEN, (p1.x,p1.y), (p1.x+pv.x, p1.y+pv.y), 1)"""
-        
         return back
             
     def update(self):
@@ -160,6 +164,9 @@ class Map(object):
     
     def remove_player(self, player):
         del self.players[player.playerId]
+        
+    def remove_shot(self, shot):
+        self.shots.remove(shot)
     
 class Portal():
     def __init__(self, x, y, map1Id, mX, mY, map2Id, exitId = None):
@@ -180,6 +187,7 @@ class Portal():
             self.exit = None
             
         self.rect = self.image.get_rect(centerx = self.x, centery = self.y)
+        self.radius = 50
         
         l = []
         for i in range(1,9):
@@ -222,7 +230,8 @@ class Portal():
     def draw(self, surface):
         #surface.blit(self.image, self.rect)
         if Misc.debug:
-            pygame.draw.circle(surface, Misc.YELLOW, (self.x, self.y), 50, 5)
+            pygame.draw.rect(surface, Misc.WHITE, self.rect, 1)
+            pygame.draw.circle(surface, Misc.YELLOW, (self.x, self.y), self.radius, 5)
         self.anim.blit(surface, self.rect)
         
 

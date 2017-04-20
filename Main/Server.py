@@ -35,7 +35,7 @@ class Server(object):
         self.sending = False
         self.worldLoaded = False
         self.playersLoaded = False
-        self.playerNamesLoaded = False
+        self.playersNamesLoaded = False
         self.playing = False
         
     
