@@ -221,7 +221,7 @@ class CreatingView(object):
                 m = takenMaps[playerId]
                 mBack = m.background
                 mRect = mBack.get_rect()
-                im = Misc.players[playerId]
+                im = pygame.image.load(Misc.players[playerId])
                 
                 col = True
                 while col:

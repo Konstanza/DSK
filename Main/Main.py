@@ -66,9 +66,10 @@ def save_images():
     global video, frames, savingThread
     
     videoLen = len(video)
-    print(videoLen)
+    print("Saving "+str(videoLen)+" images in "+Misc.REC_PATH_N)
     for i in range(videoLen):
-        pygame.image.save(video[i], os.path.join(Misc.REC_PATH, 'frame_'+str(i+frames)+'.png'))
+        pygame.image.save(video[i], os.path.join(Misc.REC_PATH_N, 'frame_'+str(i+frames)+'.png'))
+    print("Images saved")
     
     frames += videoLen
     video = []
@@ -85,11 +86,9 @@ def update():
             Misc.debug = not Misc.debug
             debugReleased = False
         debugPressed = True
-        #print(Misc.debug)
     else:
         if debugPressed:
             debugReleased = True
-        #print(Misc.debug)
     
     if pressed[pygame.K_F2]:
         if recReleased:
@@ -99,7 +98,6 @@ def update():
                 rec = False
             recReleased = False
         recPressed = True
-        #print(rec)
     else:
         if recPressed:
             recReleased = True

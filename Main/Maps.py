@@ -88,7 +88,7 @@ class Map(object):
         '''
         self.mapId = mapId
         self.backgroundId = backgroundId
-        self.background = Misc.backgrounds[self.backgroundId]
+        self.background = pygame.image.load(Misc.backgrounds[self.backgroundId])
         self.players = {}
         self.objects = []
         self.portals = []
@@ -179,7 +179,7 @@ class Portal():
         self.exitId = exitId
         self.map1 = maps[map1Id]
         self.map2 = maps[map2Id]
-        self.image = Misc.portalImage.copy()
+        self.image = pygame.image.load(Misc.portalImage)
         
         if exitId is not None:
             self.exit = portals[exitId]
@@ -190,8 +190,8 @@ class Portal():
         self.radius = 50
         
         l = []
-        for i in range(1,9):
-            l.append((os.path.join(Misc.IMAGE_PATH, 'black-hole-warp128-'+str(i)+'.png'), 0.1))
+        for i in range(1,Misc.portalAnim["max"]):
+            l.append((Misc.portalAnim["path"]+str(i)+Misc.portalAnim["type"], 0.1))
         
         self.anim = pyganim.PygAnimation(l)
         self.anim.play()
@@ -270,7 +270,7 @@ def generate_world(minim, maxim = None):
         maps.append(Map(i, random.randint(0,len(Misc.backgrounds)-1)))
     
     for i in range(mapsCount-1):
-        portalRect = Misc.portalImage.get_rect()
+        portalRect = Misc.portalImageRect
         map1 = maps[i]
         map2 = maps[i+1]
         map1Rect = map1.background.get_rect()
