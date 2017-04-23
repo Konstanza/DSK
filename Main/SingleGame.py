@@ -21,7 +21,7 @@ class SingleGame(object):
         
         Maps.generate_world(2)
         
-        self.player = PlayerHost(0,300, 300)
+        self.player = PlayerHost(0,300, 300, 0)
         Maps.maps[0].add_player(self.player)
         
     def update(self):

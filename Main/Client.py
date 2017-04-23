@@ -5,11 +5,9 @@ Created on 13 abr. 2017
 '''
 
 import socket
-import cPickle as pickle
-import threading
-from Maps import RemoteWorld, RemoteMapForClient
-from Players import PlayerDataForClient, PlayersNames
+import msgpack
 import Maps
+import errno
 from Misc import getCurrentTimeMs
 
 class Client(object):
@@ -46,52 +44,52 @@ class Client(object):
         while self.open:
             
             try:
-                data, addr = self.socket.recvfrom(1024)
-            
-                data = pickle.loads(data)
+                data, addr = self.socket.recvfrom(16384)
+                
+                data = msgpack.loads(data)
                 
                 if data == "Sending game data":
                     self.downloading = True
                     self.send("Waiting for data")
                     print(str(data), addr)
                     print("Waiting for data")
-                elif isinstance(data, RemoteWorld):
-                    Maps.load_world(data)
-                    self.worldLoaded = True
-                    self.send("World loaded")
-                    print(str(data), addr)
-                    print("World loaded")
-                elif isinstance(data, PlayerDataForClient):
-                    if self.playerData is None:
-                        self.send("Player loaded")
+                elif isinstance(data, dict):
+                    dataType = data.keys()[0]
+                    if dataType == "World":
+                        Maps.load_world(data)
+                        self.worldLoaded = True
+                        self.send("World loaded")
                         print(str(data), addr)
-                        print("Player loaded")
-                    self.playerData = data
-                elif isinstance(data, PlayersNames):
-                    self.playersNames = data.players
-                    self.send("Players names loaded")
-                    print(str(data), addr)
-                    print("Players names loaded")
-                elif isinstance(data, RemoteMapForClient):
-                    self.mapData = data
+                        print("World loaded")
+                    elif dataType == "PlayerDataForClient":
+                        if self.playerData is None:
+                            self.send("Player loaded")
+                            print(str(data), addr)
+                            print("Player loaded")
+                        self.playerData = data["PlayerDataForClient"]
+                    elif dataType == "PlayersNames":
+                        self.playersNames = data["PlayersNames"]
+                        self.send("Players names loaded")
+                        print(str(data), addr)
+                        print("Players names loaded")
+                    elif dataType == "Map":
+                        self.mapData = data["Map"]
                 
                 currentTime = getCurrentTimeMs()
                 self.ms = currentTime - self.lastTime
                 self.lastTime = currentTime
-            except socket.error:
-                pass
-
+            except socket.error as e:
+                if e.errno == errno.WSAEMSGSIZE:
+                    raise(e)
+                if e.errno != errno.WSAEWOULDBLOCK:
+                    print(e)
+                
+            
     def send(self, data):
-        data = pickle.dumps(data)
+        data = msgpack.dumps(data)
         self.socket.sendto(data, self.serverAddr)
     
     def terminate(self):
         self.socket.close()
-        self.open = False
-        
-if __name__ == "__main__":
-    client = Client("Kris")
-    
-    client.state_sendName()
-    threading.Thread(target= client.state_loop).start()     
+        self.open = False   
         

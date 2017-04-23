@@ -12,54 +12,22 @@ from Control import Keyboard, Mouse
 from Control import RemoteKeyboard, RemoteMouse
 import Maps
 
-class PlayerDataForClient():
-    def __init__(self, player = None):
-        if player is not None:
-            self.playerId = player.playerId
-            self.x = player.x
-            self.y = player.y
-            self.mapId = player.mapId
-            self.energy = player.energy
-            self.shield = player.shield
-    
-    def __str__(self):
-        return str((self.playerId, self.x, self.y, self.mapId))
-
-class EnemyDataForClientMap():
-    def __init__(self, player):
-        self.playerId = player.playerId
-        self.x = player.x
-        self.y = player.y
-        self.deg = player.deg
-    
-    def __str__(self):
-        return str((self.playerId, self.x, self.y, self.deg))
-
-class PlayerDataForHost():
-    def __init__(self, player):
-        self.playerId = player.playerId
-        self.keyboard = player.keyboard.remote
-        self.mouse = player.mouse.remote
-        self.deg = player.deg
-        self.direction = player.direction
-    
-    def __str__(self):
-        return str((self.playerId, str(self.keyboard), str(self.mouse), self.deg, self.direction))
-
-
 class PlayerEnemyClient():
     def __init__(self, playerData, mapId):
-        self.playerId = playerData.playerId
-        self.x = playerData.x
-        self.y = playerData.y
+        self.playerId = playerData[0]
+        self.x = playerData[1]
+        self.y = playerData[2]
         
-        self.deg = playerData.deg
+        self.deg = playerData[3]
     
         self.mapId = mapId
         self.map = Maps.maps[self.mapId]
         
         self.ship = pygame.image.load(Misc.players[self.playerId])
         self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
+        self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
     
     def setMap(self, map1):
         self.map = map1
@@ -67,25 +35,24 @@ class PlayerEnemyClient():
         
     def loadData(self, data, mapId):
         if data is not None:
-            self.x = data.x
-            self.y = data.y
-            self.deg = data.deg
+            self.x = data[1]
+            self.y = data[2]
+            self.deg = data[3]
             
             if mapId != self.mapId:
                 self.map.remove_player(self)
         
     def draw(self, surface):
-        rotatedShip = pygame.transform.rotate(self.ship, self.deg)
-        rotatedShipRect = rotatedShip.get_rect(centerx = self.x, centery = self.y)
-        
-        surface.blit(rotatedShip, rotatedShipRect)
+        surface.blit(self.rotatedShip, self.rotatedRect)
     
     def update(self):
         self.shipRect.center = (self.x, self.y)
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         
         
 class PlayerEnemyHost():
-    def __init__(self, playerId, x, y):
+    def __init__(self, playerId, x, y, mapId):
         self.playerId = playerId
         self.x = x
         self.y = y
@@ -97,15 +64,17 @@ class PlayerEnemyHost():
         self.shield = 100
         self.weapon = Weapons.BasicWeapon(self)
         
-        #self.mapId = playerData.mapId
-        #self.map = Maps.maps[self.mapId]
+        self.mapId = mapId
+        self.map = Maps.maps[self.mapId]
+        self.planet = self.map.planets[0]
         
         self.keyboard = RemoteKeyboard()
         self.mouse = RemoteMouse()
         
         self.ship = pygame.image.load(Misc.players[self.playerId])
         self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
-        self.rotatedShipRect = self.shipRect
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
         self.inPortal = None
@@ -113,17 +82,20 @@ class PlayerEnemyHost():
         self.direction = ''
     
     def getEnemyDataForClientMap(self):
-        return EnemyDataForClientMap(self)
+        data = [self.playerId, self.x, self.y, self.deg]
+        return data
     
     def getPlayerDataForClient(self):
-        return PlayerDataForClient(self)
+        args = [self.playerId, self.x, self.y, self.mapId, self.energy, self.shield]
+        data = {"PlayerDataForClient": args}
+        return data
     
     def loadDataFromClient(self, data):
-        if isinstance(data, PlayerDataForHost):
-            self.deg = data.deg
-            self.keyboard = data.keyboard
-            self.mouse = data.mouse
-            self.direction = data.direction
+        if data is not None:
+            self.keyboard.keyPressed = data[1]
+            self.mouse.buttonPressed = data[2]
+            self.deg = data[3]
+            self.direction = data[4]
         
     def setMap(self, map1):
         self.map = map1
@@ -137,10 +109,7 @@ class PlayerEnemyHost():
         self.y = y
         
     def draw(self, surface):
-        rotatedShip = pygame.transform.rotate(self.ship, self.deg)
-        self.rotatedShipRect = rotatedShip.get_rect(centerx = self.x, centery = self.y)
-        
-        surface.blit(rotatedShip, self.rotatedShipRect)
+        surface.blit(self.rotatedShip, self.rotatedRect)
     
     def move_w(self):
         rad = math.pi*(self.deg+180)/180
@@ -149,7 +118,7 @@ class PlayerEnemyHost():
         self.detect_borders()
         
     def move_s(self):
-        rad = math.pi*(self.deg)/180
+        rad = math.radians(self.deg)
         self.x += math.sin(rad)*self.speed
         self.y += math.cos(rad)*self.speed
         self.detect_borders()
@@ -209,16 +178,11 @@ class PlayerEnemyHost():
         self.direction = ''
         
         self.shipRect.center = (self.x, self.y)
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         
-class PlayersNames():
-    def __init__(self, playersNames):
-            self.players = playersNames
-    
-    def __str__(self):
-        return str((self.players))
-    
 class PlayerHost():
-    def __init__(self, playerId, x, y):
+    def __init__(self, playerId, x, y, mapId):
         self.playerId = playerId
         self.x = x
         self.y = y
@@ -230,15 +194,18 @@ class PlayerHost():
         self.shield = 100
         self.weapon = Weapons.BasicWeapon(self)
         
-        #self.mapId = playerData.mapId
-        #self.map = Maps.maps[self.mapId]
+        self.mapId = mapId
+        self.map = Maps.maps[self.mapId]
+        self.planet = self.map.planets[0]
+        self.planet.playerId = self.playerId
         
         self.keyboard = Keyboard()
         self.mouse = Mouse()
         
         self.ship = pygame.image.load(Misc.players[self.playerId])
         self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
-        self.rotatedShipRect = self.shipRect
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
         self.display = Misc.display
@@ -247,7 +214,8 @@ class PlayerHost():
         self.direction = ''
     
     def getEnemyDataForClientMap(self):
-        return EnemyDataForClientMap(self)
+        data = [self.playerId, self.x, self.y, self.deg]
+        return data
     
     def setMap(self, map1):
         self.map = map1
@@ -332,12 +300,11 @@ class PlayerHost():
         rotatedShipRect = rotatedShip.get_rect()
         rotatedShipRect.center = (self.display.get_width() / 2, self.display.get_height() / 2)
         
-        self.rotatedShipRect = rotatedShip.copy()
-        self.rotatedShipRect = rotatedShip.get_rect(centerx = self.x, centery = self.y)
+        self.rotatedRect = rotatedShip.copy()
+        self.rotatedRect = rotatedShip.get_rect(centerx = self.x, centery = self.y)
         back = self.map.draw(self)
         backRect = back.get_rect()
         disRect = self.display.get_rect()
-        
         
         b = False
         if self.x > backRect.width - disRect.width/2:
@@ -360,7 +327,7 @@ class PlayerHost():
             
             
         if b:
-            back.blit(rotatedShip, self.rotatedShipRect)
+            back.blit(rotatedShip, self.rotatedRect)
             self.display.blit(back, (x, y))
         else:
             self.display.blit(back, (self.display.get_width()/2-self.x, self.display.get_height()/2-self.y))
@@ -423,18 +390,20 @@ class PlayerHost():
         self.direction = ''
         
         self.shipRect.center = (self.x, self.y)
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
 
 class PlayerClient():
     def __init__(self, playerData):
-        self.playerId = playerData.playerId
-        self.x = playerData.x
-        self.y = playerData.y
+        self.playerId = playerData[0]
+        self.x = playerData[1]
+        self.y = playerData[2]
         
         self.deg = 0
         
         self.speed = 5
         
-        self.mapId = playerData.mapId
+        self.mapId = playerData[3]
         self.map = Maps.maps[self.mapId]
         
         self.keyboard = Keyboard()
@@ -442,7 +411,8 @@ class PlayerClient():
         
         self.ship = pygame.image.load(Misc.players[self.playerId])
         self.shipRect = self.ship.get_rect(centerx = self.x, centery = self.y)
-        self.rotatedShipRect = self.shipRect
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
         self.display = Misc.display
@@ -450,17 +420,17 @@ class PlayerClient():
         
         self.direction = ''
     
-    def loadDataFromHost(self, data):
+    def loadData(self, data):
         if data is not None:
-            self.x = data.x
-            self.y = data.y
+            self.x = data[1]
+            self.y = data[2]
             
-            if data.mapId != self.mapId:
-                self.map.remove_player(self)
-                Maps.maps[data.mapId].add_player(self)
+            Maps.maps[data[3]].add_player(self)
         
-    def getDataForHost(self):
-        return PlayerDataForHost(self)
+    def getData(self):
+        args = [ self.playerId, self.keyboard.remote.keyPressed, self.mouse.remote.buttonPressed, self.deg, self.direction]
+        data = {"PlayerDataForHost": args}
+        return data
     
     def setMap(self, map1):
         self.map = map1
@@ -508,16 +478,9 @@ class PlayerClient():
             self.deg -= 90
     
     def draw(self):
-        rotatedShip = pygame.transform.rotate(self.ship, self.deg)
-        rotatedShipRect = rotatedShip.get_rect()
-        rotatedShipRect.center = (self.display.get_width() / 2, self.display.get_height() / 2)
-        
-        self.rotatedShipRect = rotatedShip.copy()
-        self.rotatedShipRect = rotatedShip.get_rect(centerx = self.x, centery = self.y)
         back = self.map.draw(self)
         backRect = back.get_rect()
         disRect = self.display.get_rect()
-        
         
         b = False
         if self.x > backRect.width - disRect.width/2:
@@ -540,11 +503,13 @@ class PlayerClient():
             
             
         if b:
-            back.blit(rotatedShip, self.rotatedShipRect)
+            back.blit(self.rotatedShip, self.rotatedRect)
             self.display.blit(back, (x, y))
         else:
+            rotatedShipRect = self.rotatedShip.get_rect()
+            rotatedShipRect.center = (self.display.get_width() / 2, self.display.get_height() / 2)
             self.display.blit(back, (self.display.get_width()/2-self.x, self.display.get_height()/2-self.y))
-            self.display.blit(rotatedShip, rotatedShipRect)
+            self.display.blit(self.rotatedShip, rotatedShipRect)
             
         if Misc.debug:
             r = 50
@@ -566,9 +531,10 @@ class PlayerClient():
             pygame.draw.line(self.display, Misc.BLUE, (cX, cY), pL, 1)
     
     def update(self):
-        #self.direction = ''
         self.change_dir()
         self.shipRect.center = (self.x, self.y)
+        self.rotatedShip = pygame.transform.rotate(self.ship, self.deg)
+        self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         
         
         

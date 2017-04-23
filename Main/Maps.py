@@ -6,77 +6,40 @@ Created on 18 mar. 2017
 import random
 import Misc
 import pygame
-from pygame import surface
-import os
 from random import randint
 import pyganim
 from Players import PlayerEnemyClient
-from Weapons import ProjectilData, ProjectilHost, ProjectilClient
+from Weapons import ProjectilHost, ProjectilClient
 
 maps = []
 portals = []
+planets = []
 
-class RemoteWorld(object):
+class Planet():
     
-    def __init__(self):
-        self.maps = []
-        self.portals = []
+    def __init__(self, x, y, imageId, mapId, playerId = None):
+        self.mapId = mapId
+        self.playerId = playerId
+        self.imageId = imageId
+        self.image = pygame.image.load(Misc.planets[self.imageId])
+        self.rect = self.image.get_rect(centerx = x, centery = y)
         
-    def __str__(self):
-        string = "( maps: "
-        
-        for map1 in self.maps:
-            string += "("+str(map1)+") "
-        
-        string += ", portals: "
-        
-        for portal in self.portals:
-            string += "("+str(portal)+") "
-        
-        string += ")"
-        return string
-
-class RemotePortal(object):
-    
-    def __init__(self, x, y, map1Id, mX, mY, map2Id, exitId):
         self.x = x
         self.y = y
-        self.mX = mX 
-        self.mY = mY
-        self.map1Id = map1Id
-        self.map2Id = map2Id
-        self.exitId = exitId
     
-    def __str__(self):
-        return str((self.x, self.y, self.map1Id, self.mX, self.mY, self.map2Id, self.exitId))
+    def draw(self, surface):
+        if Misc.debug:
+            pygame.draw.rect(surface, Misc.WHITE, self.rect, 1)
+            
+        surface.blit(self.image, self.rect)
     
-class RemoteMap(object):
+    def getDataInit(self):
+        data = [self.x, self.y, self.imageId, self.mapId, self.playerId]
+        return data
     
-    def __init__(self, mapId, backgroundId):
-        self.mapId = mapId
-        self.backgroundId = backgroundId
-        
-    def __str__(self):
-        return str((self.mapId, self.backgroundId))
+    def update(self):
+        pass
 
-class RemoteMapForClient(object):
-    
-    def __init__(self, map1, playerId):
-        self.mapId = map1.mapId
-        self.players = {}
-        self.shots = []
-        
-        for key in map1.players:
-            if key != playerId:
-                player = map1.players[key]
-                self.players[player.playerId] = player.getEnemyDataForClientMap()
-        
-        for shot in map1.shots:
-            self.shots.append(ProjectilData(shot))
-        
-    def __str__(self):
-        return str((self.mapId, str(self.players)))
-    
 class Map(object):
     '''
     classdocs
@@ -92,31 +55,58 @@ class Map(object):
         self.players = {}
         self.objects = []
         self.portals = []
+        self.planets = []
         self.shots = []
     
     def add_portal(self, portal):
         self.portals.append(portal)
+        
+    def add_planet(self, planet):
+        self.planets.append(planet)
 
     def add_shot(self, shot):
         self.shots.append(shot)
 
+    def getDataInit(self):
+        data = [self.mapId, self.backgroundId]
+        return data
+    
     def loadMap(self, data):
         if data is not None:
-            for key in data.players:
-                playerData = data.players[key]
-                
-                if key in self.players:
-                    self.players[key].loadData(playerData, data.mapId)
-                else:
-                    self.add_player(PlayerEnemyClient(playerData, data.mapId))
+            players = data[1]["Player"]
+            shots = data[2]["Shot"]
+            
+            self.players = {}
+            for key in players:
+                playerData = players[key]
+                self.add_player(PlayerEnemyClient(playerData, data[0]))
             
             self.shots = []
-            for shot in data.shots:
-                self.shots.append(ProjectilClient(shot))
+            for shot in shots:
+                self.add_shot(ProjectilClient(shot))
                 
                 
     def getMap(self, player):
-        return RemoteMapForClient(self, player.playerId)
+        data = {"Map": []}
+        args = data["Map"]
+        
+        args.append(self.mapId)
+        
+        players = {}
+        shots = []
+        
+        args.append({"Player": players})
+        args.append({"Shot": shots})
+        
+        for key in self.players:
+            if key != player.playerId:
+                player = self.players[key]
+                players[key] = player.getEnemyDataForClientMap()
+        
+        for shot in self.shots:
+            shots.append(shot.getData())
+            
+        return data
     
     def draw(self, p1):
         
@@ -127,6 +117,9 @@ class Map(object):
             
         for portal in self.portals:
             portal.draw(back)
+            
+        for planet in self.planets:
+            planet.draw(back)
         
         for shot in self.shots:
             shot.draw(back)
@@ -137,18 +130,21 @@ class Map(object):
                 player.draw(back)
         
         if Misc.debug:
-            pygame.draw.rect(back, Misc.WHITE, p1.rotatedShipRect, 1)
+            pygame.draw.rect(back, Misc.WHITE, p1.rotatedRect, 1)
             pygame.draw.rect(back, Misc.RED, p1.shipRect, 1)
-            pygame.draw.circle(back, Misc.YELLOW, p1.rotatedShipRect.center, p1.radius, 1)
-            
+            pygame.draw.circle(back, Misc.YELLOW, p1.rotatedRect.center, p1.radius, 1)
+        
         return back
             
     def update(self):
-            
+        
         for key in self.players:
             player = self.players[key]
             player.update()
         
+        for planet in self.planets:
+            planet.update()
+            
         for obj in self.objects:
             obj.update()
             
@@ -196,6 +192,10 @@ class Portal():
         self.anim = pyganim.PygAnimation(l)
         self.anim.play()
     
+    def getDataInit(self):
+        data = [self.x, self.y, self.map1Id, self.mX, self.mY, self.map2Id, self.exitId]
+        return data
+    
     def update(self):
         # DETECT COLLISION
         for key in self.map1.players.keys():
@@ -223,12 +223,11 @@ class Portal():
                 
     
     def collision(self, player):
-        if self.rect.colliderect(player.shipRect):
+        if self.rect.colliderect(player.rotatedRect):
             return True
         return False
         
     def draw(self, surface):
-        #surface.blit(self.image, self.rect)
         if Misc.debug:
             pygame.draw.rect(surface, Misc.WHITE, self.rect, 1)
             pygame.draw.circle(surface, Misc.YELLOW, (self.x, self.y), self.radius, 5)
@@ -258,11 +257,13 @@ def generate_world_teaser():
     maps[2].add_portal(p4)
     
 def generate_world(minim, maxim = None):
-    global maps, portals
+    global maps, portals, planets
     if maxim is None:
         maxim = minim
     maps = []
     portals = []
+    planets = []
+    
     mapsCount = random.randint(minim,maxim)
     print(mapsCount, "maps")
     
@@ -295,42 +296,89 @@ def generate_world(minim, maxim = None):
         
         p1.exitId = lastPortal+1
         p1.exit = p2
+    
+    for i in range(mapsCount):
+        planetImageId = random.randint(0, len(Misc.planets)-1)
+        planetRect = pygame.image.load(Misc.planets[planetImageId]).get_rect()
+        map1 = maps[i]
+        map1Rect = map1.background.get_rect()
+        
+        col = True
+        while col:
+            col = False
+            p1 = Planet(random.randint(planetRect.centerx, map1Rect.width-planetRect.centerx), random.randint(planetRect.centery, map1Rect.height-planetRect.centery), planetImageId, i)
+         
+            for portal in map1.portals:
+                if portal.rect.colliderect(p1):
+                    col = True
+            
+            for planet in map1.planets:
+                if planet.rect.colliderect(p1):
+                    col = True
+        
+        map1.add_planet(p1)
+        planets.append(p1)
         
     
 def get_world():
-    global maps, portals
+    global maps, portals, planets
     
-    remote = RemoteWorld()
+    remote = {"World": []}
+    
+    remoteMaps = []
+    remotePortals = []
+    remotePlanets = []
+    
+    remote["World"].append({"Map": remoteMaps})
+    remote["World"].append({"Portal": remotePortals})
+    remote["World"].append({"Planet": remotePlanets})
     
     for map1 in maps:
-        remote.maps.append(RemoteMap(map1.mapId, map1.backgroundId))
+        remoteMaps.append(map1.getDataInit())
     
     for portal in portals:
-        remote.portals.append(RemotePortal(portal.x, portal.y, portal.map1Id, portal.mX, portal.mY, portal.map2Id, portal.exitId))
+        remotePortals.append(portal.getDataInit())
     
+    for planet in planets:
+        remotePlanets.append(planet.getDataInit())
+    
+    print(remote)
     return remote
 
+
 def load_world(remote):
-    global maps, portals
+    global maps, portals, planets
     maps = []
     portals = []
-    mapsCount = len(remote.maps)
+    planets = []
+    
+    remoteMaps = remote["World"][0]["Map"]
+    remotePortals = remote["World"][1]["Portal"]
+    remotePlanets = remote["World"][2]["Planet"]
+    
+    mapsCount = len(remoteMaps)
     print(mapsCount, "maps")
     
-    for map1 in remote.maps:
-        maps.append(Map(map1.mapId, map1.backgroundId))
+    for map1 in remoteMaps:
+        print(map1)
+        maps.append(Map(map1[0], map1[1]))
         
-    for portal in remote.portals:
-        p1 = Portal(portal.x, portal.y, portal.map1Id, portal.mX, portal.mY, portal.map2Id)
-        maps[portal.map1Id].add_portal(p1)
+    for portal in remotePortals:
+        p1 = Portal(portal[0], portal[1], portal[2], portal[3], portal[4], portal[5])
+        maps[portal[2]].add_portal(p1)
         portals.append(p1)
     
-    for i in range(len(remote.portals)):
-        remotePortal = remote.portals[i]
-        if remotePortal.exitId is not None:
+    for i in range(len(remotePortals)):
+        remotePortal = remotePortals[i]
+        if remotePortal[6] is not None:
             portal = portals[i]
-            portal.exitId = remotePortal.exitId
+            portal.exitId = remotePortal[6]
             portal.exit = portals[portal.exitId]
+    
+    for planet in remotePlanets:
+        p1 = Planet(planet[0], planet[1], planet[2], planet[3], planet[4])
+        maps[planet[3]].add_planet(p1)
+        planets.append(p1)
         
 def update():
     for ma in maps:

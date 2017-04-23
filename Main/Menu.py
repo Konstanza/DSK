@@ -7,7 +7,7 @@ import pygame
 import Misc
 from LanGame import LanGameHost, LanGameClient
 from SingleGame import SingleGame
-from Players import PlayerDataForClient, PlayerHost, PlayerEnemyHost, PlayersNames
+from Players import PlayerHost, PlayerEnemyHost
 from Client import Client
 from Server import Server
 import threading
@@ -191,14 +191,15 @@ class CreatingView(object):
             self.view = view
             
             print("Sending players names")
-            playersNames = {}
-            playersNames[0] = Misc.nickname
+            playersNamesList = []
+            playersNames = {"PlayersNames": playersNamesList}
+            playersNamesList.append(Misc.nickname)
             
             for i in range(len(self.view.server.indexAddr)):
                 playerName = self.view.server.userAddr[self.view.server.indexAddr[i]].nickname
-                playersNames[i+1] = playerName
+                playersNamesList.append(playerName)
             
-            self.view.server.sendtoall(PlayersNames(playersNames))
+            self.view.server.sendtoall(playersNames)
         
         def update(self):
             if self.view.server.playersNamesLoaded:
@@ -234,13 +235,16 @@ class CreatingView(object):
                     for portal in m.portals:
                         if portal.rect.colliderect(imRect):
                             col = True
+                    for planet in m.planets:
+                        if planet.rect.colliderect(imRect):
+                            col = True
                 
                 if playerId > 0:
-                    player = PlayerEnemyHost(playerId, x, y)
+                    player = PlayerEnemyHost(playerId, x, y, m.mapId)
                     self.view.players.append(player)
                     Maps.maps[m.mapId].add_player(player)
                 else:
-                    self.view.playerHost = PlayerHost(playerId, x, y)
+                    self.view.playerHost = PlayerHost(playerId, x, y, m.mapId)
                     Maps.maps[m.mapId].add_player(self.view.playerHost)
                     
                 print('Player '+str(playerId)+' created: '+ str((playerId, x, y, m.mapId)))

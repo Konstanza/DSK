@@ -8,15 +8,15 @@ class BasicWeapon():
         self.shotImageId = 0
         self.shotPower = 10
         self.shotSpeed = 10
-        self.time = 30
+        self.time = 5
         self.count = 0
         self.player = player
     
     def shoot(self):
         if self.count == 0:
             self.count = 1
-            x = self.player.rotatedShipRect.centerx
-            y = self.player.rotatedShipRect.centery
+            x = self.player.rotatedRect.centerx
+            y = self.player.rotatedRect.centery
             
             self.player.map.add_shot(ProjectilHost(self.player, x, y, self.player.deg, self.shotImageId,self.shotPower,self.shotSpeed))
             
@@ -26,29 +26,20 @@ class BasicWeapon():
             if self.count == self.time:
                 self.count = 0
 
-class ProjectilData():
-    def __init__(self, projectil):
-        self.imageId = projectil.imageId
-        self.x = projectil.x
-        self.y = projectil.y
-        self.deg = projectil.deg
-    
-    def __str__(self):
-        return str(self.imageId, self.x, self.y, self.deg)
 
 class ProjectilClient(pygame.sprite.Sprite):
     def __init__(self, projectil):
         pygame.sprite.Sprite.__init__(self)
         
-        self.imageId = projectil.imageId
+        self.imageId = projectil[0]
         self.image = pygame.image.load(Misc.shots[self.imageId])
         self.rect = self.image.get_rect()
         self.rotatedRect = self.rect
         self.radius = int(math.hypot(self.rect.x-self.rect.centerx, self.rect.y-self.rect.centery))
         
-        self.x = projectil.x
-        self.y = projectil.y
-        self.deg = projectil.deg
+        self.x = projectil[1]
+        self.y = projectil[2]
+        self.deg = projectil[3]
 
     def draw(self, surface):
         rotated = pygame.transform.rotate(self.image, self.deg)
@@ -64,16 +55,18 @@ class ProjectilHost(pygame.sprite.Sprite):
     def __init__(self, player, x, y, deg, imageId, power, speed):
 
         pygame.sprite.Sprite.__init__(self)
-        #self.image = pygame.image.load(os.path.join(IMAGE_PATH, 'projectil.png'))
         self.imageId = imageId
         self.image = pygame.image.load(Misc.shots[self.imageId])
         
-        self.rect = self.image.get_rect()
-        self.rotatedRect = self.rect
-        self.radius = int(math.hypot(self.rect.x-self.rect.centerx, self.rect.y-self.rect.centery))
+        
         self.x = x
         self.y = y
         self.deg = deg+180
+        
+        self.rect = self.image.get_rect()
+        self.rotatedImage = pygame.transform.rotate(self.image, self.deg)
+        self.rotatedRect = self.rotatedImage.get_rect(centerx = self.x, centery= self.y)
+        self.radius = int(math.hypot(self.rect.x-self.rect.centerx, self.rect.y-self.rect.centery))
         
         self.power = power
         self.speed = speed
@@ -88,7 +81,8 @@ class ProjectilHost(pygame.sprite.Sprite):
         self.out = False
         
     def getData(self):
-        return ProjectilData(self)
+        data = [self.imageId, self.x, self.y, self.deg]
+        return data
         
     def detect_borders(self):
         backRect = self.map.background.get_rect()
@@ -105,22 +99,33 @@ class ProjectilHost(pygame.sprite.Sprite):
         self.move()
         self.detect_borders()
         
+        removed = False
         for key in self.map.players:
             player = self.map.players[key]
             if player.playerId != self.player.playerId:
-                playerRect = player.rotatedShipRect
+                playerRect = player.rotatedRect
                 if self.rotatedRect.colliderect(playerRect):
                     self.map.remove_shot(self)
+                    removed = True
+                    break
         
-        for portal in self.map.portals:
-            if self.rotatedRect.colliderect(portal.rect):
-                self.map.remove_shot(self)
-                
+        if not removed:
+            for portal in self.map.portals:
+                if self.rotatedRect.colliderect(portal.rect):
+                    self.map.remove_shot(self)
+                    removed = True
+        
+        if not removed:
+            for planet in self.map.planets:
+                if self.rotatedRect.colliderect(planet.rect):
+                    self.map.remove_shot(self)
+                    removed = True
+        
+        self.rotatedImage = pygame.transform.rotate(self.image, self.deg)
+        self.rotatedRect = self.rotatedImage.get_rect(centerx = self.x, centery= self.y)
                     
     def draw(self, surface):
-        rotated = pygame.transform.rotate(self.image, self.deg)
-        self.rotatedRect = rotated.get_rect(centerx = self.x, centery= self.y)
-        surface.blit(rotated, self.rotatedRect)
+        surface.blit(self.rotatedImage, self.rotatedRect)
         
         if Misc.debug:
             pygame.draw.rect(surface, Misc.WHITE, self.rotatedRect, 1)

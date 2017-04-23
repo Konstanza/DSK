@@ -4,8 +4,7 @@ Created on 13 abr. 2017
 @author: Konstanza
 '''
 import socket
-import cPickle as pickle
-from Players import PlayerDataForHost
+import msgpack
 
 class Server(object):
     '''
@@ -48,7 +47,7 @@ class Server(object):
             try:
                 data, addr = self.socket.recvfrom(1024)
                 
-                data = pickle.loads(data)
+                data = msgpack.loads(data)
                 
                 if  not addr in self.userAddr:
                     if len(self.userAddr) < self.maxPlayers:
@@ -75,14 +74,11 @@ class Server(object):
             try:
                 data, addr = self.socket.recvfrom(1024)
                 
-                data = pickle.loads(data)
+                data = msgpack.loads(data)
                 
                 if not addr in self.userAddr:
                     self.sendto("Game started", addr)
                 else:
-                    if not isinstance(data, PlayerDataForHost):
-                        print("Received:",str(data), "from",addr)
-                    
                     if data == "Waiting for data":
                         self.userAddr[addr].waiting = True
                         self.sending = True
@@ -91,6 +87,7 @@ class Server(object):
                             if not self.userAddr[addr].waiting:
                                 self.sending = False
                                 break
+                        print("Received:",str(data), "from",addr)
                     elif data == "World loaded":
                         self.userAddr[addr].worldLoaded = True
                         self.worldLoaded = True
@@ -99,6 +96,7 @@ class Server(object):
                             if not self.userAddr[addr].worldLoaded:
                                 self.worldLoaded = False
                                 break
+                        print("Received:",str(data), "from",addr)
                     elif data == "Player loaded":
                         self.userAddr[addr].playerLoaded = True
                         self.playersLoaded = True
@@ -107,6 +105,7 @@ class Server(object):
                             if not self.userAddr[addr].playerLoaded:
                                 self.playersLoaded = False
                                 break
+                        print("Received:",str(data), "from",addr)
                     elif data == "Players names loaded":
                         self.userAddr[addr].playerNamesLoaded = True
                         self.playersNamesLoaded = True
@@ -115,8 +114,13 @@ class Server(object):
                             if not self.userAddr[addr].playerNamesLoaded:
                                 self.playersNamesLoaded = False
                                 break
-                    elif isinstance(data, PlayerDataForHost):
-                        self.userAddr[self.indexAddr[data.playerId-1]].playerData = data
+                        print("Received:",str(data), "from",addr)
+                    elif isinstance(data, dict):
+                        dataType = data.keys()[0]
+                        
+                        if dataType == "PlayerDataForHost":
+                            data = data["PlayerDataForHost"]
+                            self.userAddr[self.indexAddr[data[0]-1]].playerData = data
                         
             except socket.error:
                 pass  
@@ -130,9 +134,7 @@ class Server(object):
         return False
     
     def sendto(self, data, addr):
-        #data = json.dumps(data)    
-        #print("Sending:",str(data), "to", addr)
-        data = pickle.dumps(data)    
+        data = msgpack.dumps(data)    
         self.socket.sendto(data, addr)
     
     def sendtoall(self, data):
@@ -143,7 +145,6 @@ class Server(object):
         self.sendto(data, self.indexAddr[index])
     
     def terminate(self):
-        #self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
         self.open = False
         print("Server closed")

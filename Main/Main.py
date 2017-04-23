@@ -5,6 +5,7 @@ import Misc
 import random
 import threading
 import Menu
+import errno
 
 random.seed(a=None)
 video = []
@@ -61,14 +62,24 @@ def draw():
         
     pygame.display.flip()
     
-    
 def save_images():
     global video, frames, savingThread
     
+    i = 0
+    while True:
+        try:
+            REC_PATH_N = os.path.join(Misc.REC_PATH, "Frames-"+str(i))
+            os.mkdir(REC_PATH_N)
+            break
+        except OSError as exception:
+            i += 1
+            if exception.errno != errno.EEXIST:
+                raise    
+            
     videoLen = len(video)
-    print("Saving "+str(videoLen)+" images in "+Misc.REC_PATH_N)
+    print("Saving "+str(videoLen)+" images in "+REC_PATH_N)
     for i in range(videoLen):
-        pygame.image.save(video[i], os.path.join(Misc.REC_PATH_N, 'frame_'+str(i+frames)+'.png'))
+        pygame.image.save(video[i], os.path.join(REC_PATH_N, 'frame_'+str(i+frames)+'.png'))
     print("Images saved")
     
     frames += videoLen

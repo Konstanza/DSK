@@ -15,9 +15,9 @@ import errno
 view = None
 
 #Server-Client
-host = 'localhost'
+host = "192.168.1.11"
 hostPort = 9999
-ip = 'localhost'
+ip = "192.168.1.10"
 port = 9999
 nickname = 'Kons'
 minPlayers = 1
@@ -51,30 +51,19 @@ else :
         IMAGE_PATH = os.path.join(BASE_PATH, "Images")
         REC_PATH = os.path.join(BASE_PATH, "Frames")
         FONT_PATH = os.path.join(BASE_PATH, "Fonts")
-        
+
 try:
     os.mkdir(REC_PATH)
 except OSError as exception:
     if exception.errno != errno.EEXIST:
         raise
-
-i = 0
-while True:
-    try:
-        REC_PATH_N = os.path.join(REC_PATH, "Frames-"+str(i))
-        os.mkdir(REC_PATH_N)
-        break
-    except OSError as exception:
-        i += 1
-        if exception.errno != errno.EEXIST:
-            raise    
-        
+    
 # Images
-backgrounds = [os.path.join(IMAGE_PATH, 'space-1.png'), 
-               os.path.join(IMAGE_PATH, 'space-2.png'),
+backgrounds = [os.path.join(IMAGE_PATH, 'space-1.jpg'), 
+               os.path.join(IMAGE_PATH, 'space-2.jpg'),
                os.path.join(IMAGE_PATH, 'background_2.jpg'),
                os.path.join(IMAGE_PATH, 'background_3.jpg'),
-               os.path.join(IMAGE_PATH, 'Space.png')
+               os.path.join(IMAGE_PATH, 'Space.jpg')
                ]
 
 players = [
@@ -82,6 +71,13 @@ players = [
     os.path.join(IMAGE_PATH, 'playerShip1_red.png'),
     os.path.join(IMAGE_PATH, 'playerShip1_green.png'),
     os.path.join(IMAGE_PATH, 'playerShip1_purple.png')
+    ]
+
+planets = [
+    os.path.join(IMAGE_PATH, 'p3shaded.png'),
+    os.path.join(IMAGE_PATH, 'p4shaded.png'),
+    os.path.join(IMAGE_PATH, 'p5shaded.png'),
+    os.path.join(IMAGE_PATH, 'p8shaded.png')
     ]
 
 portalImage = os.path.join(IMAGE_PATH, 'black-hole-warp128-1.png')

@@ -13,11 +13,9 @@ class LanGameHost():
     
     def __init__(self, server, playerHost, players):
         self.server = server
-        #self.server.sendtoall("Game started")
-        
         self.playerHost = playerHost
         self.players = players
-        #threading.Thread(target = self.server.state_startGame).start()
+
     
     def draw(self):
         Misc.display.fill(Misc.BLACK)
@@ -80,8 +78,8 @@ class LanGameClient():
         Misc.done = True
         
     def update(self):
-        self.loadPlayer()
         self.loadMap()
+        self.loadPlayer()
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -95,17 +93,18 @@ class LanGameClient():
                 self.player.updateMouseButtons()
                 
         self.player.update()
-        #Maps.update()
         
         threading.Thread(target = self.sendData).start()
     
     def loadMap(self):
-        self.player.map.loadMap(self.client.mapData)
+        mapData = self.client.mapData
+        if mapData is not None:
+            Maps.maps[mapData[0]].loadMap(mapData)
         
     def loadPlayer(self):
-        self.player.loadDataFromHost(self.client.playerData)
+        self.player.loadData(self.client.playerData)
         
     def sendData(self):
-        self.client.send(self.player.getDataForHost())
+        self.client.send(self.player.getData())
 
         
