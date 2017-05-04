@@ -13,9 +13,10 @@ from Server import Server
 import threading
 import random
 import Maps
+import os
 
 server = None
-
+    
 class MenuView(object):
     '''
     classdocs
@@ -39,7 +40,34 @@ class MenuView(object):
     def play(self):
         Misc.view = PlayMenuView()
     def options(self):
-        pass
+        done = False
+        
+        while not done:
+            print("\n1. Nickname: "+Misc.nickname)
+            print("2. Host ip: "+Misc.host)
+            print("3. Host port: "+str(Misc.hostPort))
+            print("4. Ip: "+Misc.ip)
+            print("5. Port: "+str(Misc.port))
+            print("6. Exit")
+            
+            selection = input("Enter number: ")
+            
+            print('')
+            if selection == 1:
+                Misc.nickname = raw_input("Enter nickname: ")
+            elif selection == 2:
+                Misc.host = raw_input("Enter host ip: ")
+            elif selection == 2:
+                Misc.host = raw_input("Enter host ip: ")
+            elif selection == 3:
+                Misc.hostPort = input("Enter host port: ")    
+            elif selection == 4:
+                Misc.ip = raw_input("Enter ip: ")
+            elif selection == 5:
+                Misc.port = input("Enter port: ")
+            elif selection == 6:
+                done = True
+        
     def quit(self):
         Misc.done = True
         
@@ -125,7 +153,8 @@ class WaitingView(object):
         print("Waiting for players")
         
     def start(self):
-        Misc.view = CreatingView(self.server)
+        if self.server.hasPlayers():
+            Misc.view = CreatingView(self.server)
         
     def accept(self):
         pass
@@ -284,7 +313,7 @@ class DownloadingView(object):
     def __init__(self, client):
         self.client = client
         self.state = None
-    
+            
     class preparing(object):
         def __init__(self, view):
             self.view = view
@@ -332,6 +361,9 @@ class DownloadingView(object):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit()
+        
+        if Misc.drawFps:
+            Misc.drawMs = True
             
         if self.state == None:
             self.state = self.preparing(self)
@@ -365,8 +397,12 @@ class JoinGame(object):
         self.client.state_sendName()
         threading.Thread(target= self.client.state_loop).start() 
         
+        if Misc.drawFps:
+            Misc.drawMs = True
+        
     def ret(self):
         self.client.terminate()
+        Misc.drawMs = False
         Misc.view = PlayMenuView()
         
     def quit(self):
@@ -377,6 +413,9 @@ class JoinGame(object):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.quit()
+        
+        if Misc.drawFps:
+            Misc.drawMs = True
                 
         for button in self.buttons:
             button.update()

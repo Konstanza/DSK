@@ -4,6 +4,7 @@ import sys
 import Misc
 import random
 import threading
+from threading import Timer
 import Menu
 import errno
 
@@ -16,17 +17,25 @@ debugPressed = False
 debugReleased = True
 recPressed = False
 recReleased = True
+drawFpsPressed = False
+drawFpsReleased = True
 FPS = 60
+fpsCounter = 0
+fps = FPS
     
 def main():
     
-    global clock, FPS
+    global clock, FPS, fps, fpsCounter, timer
     
     initPygame()
+    
+    timer = Timer(1.0, updateFps)
+    timer.start()
     
     while Misc.done == False:
         Misc.view.update()
         update()
+        fpsCounter += 1
         
         Misc.view.draw()
         draw()
@@ -36,6 +45,23 @@ def main():
     terminate()
 
 
+def updateFps():
+    global fps, fpsCounter, timer
+    fps = fpsCounter
+    fpsCounter = 0
+        
+    timer = Timer(1.0, updateFps)
+    timer.start()
+
+def drawFps(surface):
+    global fps
+    color = Misc.RED
+    text = "fps: "+str(fps)
+    font = pygame.font.Font(os.path.join(Misc.FONT_PATH, 'HappyKiller.ttf'), 10)
+    textImage = font.render(text, 1, color)
+    textRect = font.render(text, 1, color).get_rect(x = 0, y = 0)
+    surface.blit(textImage, textRect)
+    
 def initPygame():
     global clock
     
@@ -49,6 +75,14 @@ def initPygame():
     clock = pygame.time.Clock()
     
     Misc.view = Menu.MenuView()
+
+def drawMs(surface):
+    color = Misc.RED
+    text = "ms: "+str(Misc.ms)
+    font = pygame.font.Font(os.path.join(Misc.FONT_PATH, 'HappyKiller.ttf'), 10)
+    textImage = font.render(text, 1, color)
+    textRect = font.render(text, 1, color).get_rect(x = 0, y = 15)
+    surface.blit(textImage, textRect)
     
 def draw():
     global video, savingThread, rec
@@ -59,7 +93,12 @@ def draw():
     
     if savingThread is not None:
         pygame.draw.rect(Misc.display, Misc.YELLOW, (0,0,Misc.DISPLAY_WIDTH-1,Misc.DISPLAY_HEIGHT-1), 2)
-        
+    
+    if Misc.drawFps:
+        drawFps(Misc.display)
+        if Misc.drawMs:
+            drawMs(Misc.display)
+    
     pygame.display.flip()
     
 def save_images():
@@ -88,11 +127,22 @@ def save_images():
     savingThread = None
 
 def update():
-    global savingThread, rec, video, debugReleased, debugPressed, recPressed, recReleased
+    global savingThread, rec, video, debugReleased, debugPressed, recPressed, recReleased, drawFpsReleased, drawFpsPressed
     
     pressed = pygame.key.get_pressed()
     
     if pressed[pygame.K_F1]:
+        if drawFpsReleased:
+            Misc.drawFps = not Misc.drawFps
+            if Misc.drawMs:
+                Misc.drawMs = False
+            drawFpsReleased = False
+        drawFpsPressed = True
+    else:
+        if drawFpsPressed:
+            drawFpsReleased = True
+
+    if pressed[pygame.K_F2]:
         if debugReleased:
             Misc.debug = not Misc.debug
             debugReleased = False
@@ -101,7 +151,7 @@ def update():
         if debugPressed:
             debugReleased = True
     
-    if pressed[pygame.K_F2]:
+    if pressed[pygame.K_F3]:
         if recReleased:
             if not rec and savingThread is None:
                 rec = True
@@ -113,16 +163,20 @@ def update():
         if recPressed:
             recReleased = True
         
-    if pressed[pygame.K_F3]:
+    if pressed[pygame.K_F4]:
         if not rec and savingThread is None and len(video) > 0:
             savingThread = threading.Thread(target=save_images)
             savingThread.start()
-    if pressed[pygame.K_F4]:
+            
+    if pressed[pygame.K_F5]:
         if savingThread is None:
             video = []
         rec = False
+    
                         
 def terminate():
+    global timer
+    timer.cancel()
     pygame.quit()
     sys.exit()
 

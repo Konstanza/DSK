@@ -9,6 +9,7 @@ import msgpack
 import Maps
 import errno
 from Misc import getCurrentTimeMs
+import Misc
 
 class Client(object):
     '''
@@ -35,7 +36,8 @@ class Client(object):
         self.playersNames = None
         
         self.lastTime = getCurrentTimeMs()
-        self.ms = 0
+        
+        Misc.ms = 0
         
     def state_sendName(self):
         self.send(self.name)
@@ -76,7 +78,7 @@ class Client(object):
                         self.mapData = data["Map"]
                 
                 currentTime = getCurrentTimeMs()
-                self.ms = currentTime - self.lastTime
+                Misc.ms = currentTime - self.lastTime
                 self.lastTime = currentTime
             except socket.error as e:
                 if e.errno == errno.WSAEMSGSIZE:

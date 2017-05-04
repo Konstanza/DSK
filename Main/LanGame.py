@@ -13,9 +13,9 @@ class LanGameHost():
     
     def __init__(self, server, playerHost, players):
         self.server = server
+        
         self.playerHost = playerHost
         self.players = players
-
     
     def draw(self):
         Misc.display.fill(Misc.BLACK)
@@ -91,7 +91,10 @@ class LanGameClient():
                 self.player.setMousePosition(mouseX,mouseY)
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
                 self.player.updateMouseButtons()
-                
+        
+        if Misc.drawFps:
+            Misc.drawMs = True
+            
         self.player.update()
         
         threading.Thread(target = self.sendData).start()

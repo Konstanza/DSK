@@ -15,13 +15,14 @@ import errno
 view = None
 
 #Server-Client
-host = "192.168.1.11"
+host = "localhost"
 hostPort = 9999
-ip = "192.168.1.10"
+ip = "localhost"
 port = 9999
-nickname = 'Kons'
+nickname = 'Player'
 minPlayers = 1
 maxPlayers = 2
+ms = 0
 
 #Colors
 BLACK = (0,0,0)
@@ -38,6 +39,8 @@ display = None
 done = False
 debug = False
 view = None
+drawFps = False
+drawMs = False
 
 if getattr( sys, 'frozen', False ) :
         # Running in a bundle
@@ -95,7 +98,7 @@ shots = [
 
 #Fonts
 font = 'HappyKiller.ttf'
-
+    
 def getCurrentTimeMs():
     return int(round(time.time() * 1000))
     

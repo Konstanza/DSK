@@ -36,7 +36,11 @@ class Server(object):
         self.playersLoaded = False
         self.playersNamesLoaded = False
         self.playing = False
-        
+    
+    def hasPlayers(self):
+        if len(self.indexAddr) >= self.minPlayers:
+            return True
+        return False
     
     def state_waitForPlayers(self):
         self.state = self.state_waitForPlayers
