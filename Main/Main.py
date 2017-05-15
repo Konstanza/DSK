@@ -69,6 +69,7 @@ def initPygame():
 
     Misc.display = pygame.display.set_mode((Misc.DISPLAY_WIDTH,Misc.DISPLAY_HEIGHT))
     pygame.display.set_caption('DSK GAME')
+    Misc.gameSurface = Misc.display.subsurface(Misc.gameRect)
     
     pygame.key.set_repeat(True)
     

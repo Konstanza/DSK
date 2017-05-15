@@ -78,6 +78,7 @@ class PlayerEnemyHost():
         self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
         self.inPortal = None
+        self.inRect = False
         
         self.direction = ''
     
@@ -94,8 +95,9 @@ class PlayerEnemyHost():
         if data is not None:
             self.keyboard.keyPressed = data[1]
             self.mouse.buttonPressed = data[2]
-            self.deg = data[3]
-            self.direction = data[4]
+            self.inRect = data[3]
+            self.deg = data[4]
+            self.direction = data[5]
         
     def setMap(self, map1):
         self.map = map1
@@ -170,8 +172,9 @@ class PlayerEnemyHost():
             self.move_a()
             self.direction = 'a'
         
-        if self.mouse.buttonPressed["shoot"]:
-            self.weapon.shoot()
+        if self.inRect:
+            if self.mouse.buttonPressed["shoot"]:
+                self.weapon.shoot()
             
         self.weapon.update()
         
@@ -208,7 +211,9 @@ class PlayerHost():
         self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
-        self.display = Misc.display
+        self.display = Misc.gameSurface
+        self.disRect = Misc.gameRect
+        self.inRect = False
         self.inPortal = None
         
         self.direction = ''
@@ -222,7 +227,11 @@ class PlayerHost():
         self.mapId = map1.mapId 
         
     def setMousePosition(self, mouseX, mouseY):
-        self.mouse.setPosition(mouseX, mouseY)
+        if self.disRect.collidepoint((mouseX, mouseY)):
+            self.inRect = True
+            self.mouse.setPosition(mouseX, mouseY)
+        else:
+            self.inRect = False
     
     def setDirection(self, direction):
         self.direction = direction
@@ -248,9 +257,11 @@ class PlayerHost():
             y = self.y
         else:
             y = self.display.get_height()/2
-            
-        oc = -self.mouse.remote.mouseY+(y)
-        ac = self.mouse.remote.mouseX-(x)
+        
+        mouseX = self.mouse.remote.mouseX-self.disRect.x
+        mouseY = self.mouse.remote.mouseY-self.disRect.y
+        oc = -mouseY+(y)
+        ac = mouseX-(x)
         h = math.sqrt(oc*oc+ac*ac)
         if h >= 20:
             self.deg = math.atan2(oc, ac)*180/math.pi
@@ -337,6 +348,8 @@ class PlayerHost():
             r = 50
             cX = self.display.get_width()/2
             cY = self.display.get_height()/2
+            mouseX = self.mouse.remote.mouseX-self.disRect.x
+            mouseY = self.mouse.remote.mouseY-self.disRect.y
             
             pF = (cX+self.dirX*r, cY+self.dirY*r)
             
@@ -346,7 +359,7 @@ class PlayerHost():
             rad = math.pi*(self.deg+90)/180
             pL = (cX+math.sin(rad)*r, cY+math.cos(rad)*r)
             
-            pygame.draw.polygon(self.display, Misc.WHITE, [(cX,cY),(self.mouse.remote.mouseX, cY),(self.mouse.remote.mouseX,self.mouse.remote.mouseY)], 1)
+            pygame.draw.polygon(self.display, Misc.WHITE, [(cX,cY),(mouseX, cY),(mouseX,mouseY)], 1)
             pygame.draw.line(self.display, Misc.RED, (cX, cY), pF, 1)
             pygame.draw.line(self.display, Misc.GREEN, (cX, cY), pR, 1)
             pygame.draw.line(self.display, Misc.BLUE, (cX, cY), pL, 1)
@@ -382,8 +395,9 @@ class PlayerHost():
             
         self.change_dir()
         
-        if self.mouse.isButtonPressed("shoot"):
-            self.weapon.shoot()
+        if self.inRect:
+            if self.mouse.isButtonPressed("shoot"):
+                self.weapon.shoot()
             
         self.weapon.update()
         
@@ -415,7 +429,9 @@ class PlayerClient():
         self.rotatedRect = self.rotatedShip.get_rect(centerx = self.x, centery = self.y)
         self.radius = int(math.hypot(self.shipRect.x-self.shipRect.centerx, self.shipRect.y-self.shipRect.centery))
         
-        self.display = Misc.display
+        self.display = Misc.gameSurface
+        self.disRect = Misc.gameRect
+        self.inRect = False
         self.inPortal = None
         
         self.direction = ''
@@ -428,7 +444,7 @@ class PlayerClient():
             Maps.maps[data[3]].add_player(self)
         
     def getData(self):
-        args = [ self.playerId, self.keyboard.remote.keyPressed, self.mouse.remote.buttonPressed, self.deg, self.direction]
+        args = [ self.playerId, self.keyboard.remote.keyPressed, self.mouse.remote.buttonPressed, self.inRect, self.deg, self.direction]
         data = {"PlayerDataForHost": args}
         return data
     
@@ -437,7 +453,11 @@ class PlayerClient():
         self.mapId = map1.mapId 
         
     def setMousePosition(self, mouseX, mouseY):
-        self.mouse.setPosition(mouseX, mouseY)
+        if self.disRect.collidepoint((mouseX, mouseY)):
+            self.inRect = True
+            self.mouse.setPosition(mouseX, mouseY)
+        else:
+            self.inRect = False
     
     def setDirection(self, direction):
         self.direction = direction
@@ -470,8 +490,10 @@ class PlayerClient():
         else:
             y = self.display.get_height()/2
             
-        oc = -self.mouse.remote.mouseY+(y)
-        ac = self.mouse.remote.mouseX-(x)
+        mouseX = self.mouse.remote.mouseX-self.disRect.x
+        mouseY = self.mouse.remote.mouseY-self.disRect.y
+        oc = -mouseY+(y)
+        ac = mouseX-(x)
         h = math.sqrt(oc*oc+ac*ac)
         if h >= 20:
             self.deg = math.atan2(oc, ac)*180/math.pi
@@ -515,6 +537,8 @@ class PlayerClient():
             r = 50
             cX = self.display.get_width()/2
             cY = self.display.get_height()/2
+            mouseX = self.mouse.remote.mouseX-self.disRect.x
+            mouseY = self.mouse.remote.mouseY-self.disRect.y
             
             rad = math.pi*(self.deg+180)/180
             pF = (cX+math.sin(rad)*r, cY+math.cos(rad)*r)
@@ -525,7 +549,7 @@ class PlayerClient():
             rad = math.pi*(self.deg+90)/180
             pL = (cX+math.sin(rad)*r, cY+math.cos(rad)*r)
             
-            pygame.draw.polygon(self.display, Misc.WHITE, [(cX,cY),(self.mouse.remote.mouseX, cY),(self.mouse.remote.mouseX,self.mouse.remote.mouseY)], 1)
+            pygame.draw.polygon(self.display, Misc.WHITE, [(cX,cY),(mouseX, cY),(mouseX,mouseY)], 1)
             pygame.draw.line(self.display, Misc.RED, (cX, cY), pF, 1)
             pygame.draw.line(self.display, Misc.GREEN, (cX, cY), pR, 1)
             pygame.draw.line(self.display, Misc.BLUE, (cX, cY), pL, 1)

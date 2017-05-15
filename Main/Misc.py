@@ -13,10 +13,13 @@ import errno
 
 
 view = None
+#print(errno.errorcode[10040])
 
 #Server-Client
+#host = '25.6.51.210'
 host = "localhost"
 hostPort = 9999
+#ip = '25.6.51.210'
 ip = "localhost"
 port = 9999
 nickname = 'Player'
@@ -33,9 +36,11 @@ MAGENTA = (255,0,255)
 GREEN = (0,255,0)
 BLUE = (0,0,255)
 
-DISPLAY_WIDTH = 640 #1100
-DISPLAY_HEIGHT = 480 #800
+DISPLAY_WIDTH = 800 #1100
+DISPLAY_HEIGHT = 600 #800
 display = None
+gameRect = pygame.Rect(0, 0, 700, 500)
+gameSurface = None
 done = False
 debug = False
 view = None
