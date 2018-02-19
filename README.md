@@ -1,5 +1,5 @@
 # DSK
 
-Project for Game development class.
+Project for Game development course.
 
 2D multiplayer space game made with pygame.
